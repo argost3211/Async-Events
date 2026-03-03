@@ -11,3 +11,6 @@ class Event(Base):
     type: Mapped[str] = mapped_column(String(length=64), nullable=False)
     message: Mapped[str | None]
     created_at: Mapped[created_at]
+
+    def __repr__(self):
+        return f"Event(id={self.id}, type={self.type}, message={self.message[:50]}, created_at={self.created_at})"

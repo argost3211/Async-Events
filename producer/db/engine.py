@@ -1,8 +1,16 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from producer.core.config import config
 
-engine = create_async_engine(url=config.pg_url(), echo=config.debug)
-Session = sessionmaker(engine, class_=AsyncSession)
+engine = create_async_engine(
+    config.pg_url(),
+    echo=config.debug,
+    future=True,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    autoflush=False,
+    class_=AsyncSession,
+)
