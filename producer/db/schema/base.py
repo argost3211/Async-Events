@@ -4,7 +4,7 @@ from typing import Annotated
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, mapped_column
-from sqlalchemy import text
+from sqlalchemy import DateTime, text
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -16,5 +16,9 @@ uuid_pk = Annotated[
 ]
 created_at = Annotated[
     datetime.datetime,
-    mapped_column(nullable=False, server_default=text("TIMEZONE('utc', NOW())")),
+    mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("NOW()"),
+    ),
 ]

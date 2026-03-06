@@ -24,16 +24,24 @@ def get_event_service(
     return EventService(session=session)
 
 
-@router.post("/events", response_model=EventRead)
+@router.post("/events", response_model=EventRead, status_code=201)
 async def create_event(
     event: EventCreate, service: EventService = Depends(get_event_service)
 ) -> EventRead:
-    event_model = await service.create_event(event.type, event.message)
+    event_model = await service.create_event(
+        order_id=event.order_id,
+        user_id=event.user_id,
+        event_type=event.event_type,
+        event_occurred_at=event.event_occurred_at,
+    )
     return EventRead(
         id=str(event_model.id),
-        type=event_model.type,
-        message=event_model.message,
+        order_id=event_model.order_id,
+        user_id=event_model.user_id,
+        event_type=event_model.event_type,
         created_at=event_model.created_at,
+        event_occurred_at=event_model.event_occurred_at,
+        published_to_kafka=event_model.published_to_kafka,
     )
 
 
@@ -44,7 +52,13 @@ async def get_events(
     events = await service.get_all_events()
     return [
         EventRead(
-            id=str(em.id), type=em.type, message=em.message, created_at=em.created_at
+            id=str(em.id),
+            order_id=em.order_id,
+            user_id=em.user_id,
+            event_type=em.event_type,
+            created_at=em.created_at,
+            event_occurred_at=em.event_occurred_at,
+            published_to_kafka=em.published_to_kafka,
         )
         for em in events
     ]
@@ -62,7 +76,10 @@ async def get_event(
         )
     return EventRead(
         id=str(event_model.id),
-        type=event_model.type,
-        message=event_model.message,
+        order_id=event_model.order_id,
+        user_id=event_model.user_id,
+        event_type=event_model.event_type,
         created_at=event_model.created_at,
+        event_occurred_at=event_model.event_occurred_at,
+        published_to_kafka=event_model.published_to_kafka,
     )

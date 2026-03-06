@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock
 
@@ -14,10 +15,17 @@ async def test_create_event(event_service: EventService, mocked_session: AsyncSe
     mocked_session.begin = MagicMock(return_value=cm)
     mocked_session.refresh = AsyncMock()
 
-    event = await event_service.create_event("some_type", "some message")
+    event = await event_service.create_event(
+        order_id="ord-1",
+        user_id="user-1",
+        event_type="order_created",
+        event_occurred_at=datetime.now(timezone.utc),
+    )
 
-    assert event.type == "some_type"
-    assert event.message == "some message"
+    assert event.order_id == "ord-1"
+    assert event.user_id == "user-1"
+    assert event.event_type == "order_created"
+    assert event.published_to_kafka is False
     mocked_session.add.assert_called_once()
     mocked_session.refresh.assert_called_once()
     assert mocked_session.add.call_args[0][0] is event
@@ -27,7 +35,12 @@ async def test_get_event_returns_event(
     event_service: EventService, mocked_session: AsyncSession
 ):
     event_id = uuid4()
-    expected = make_event(event_id=event_id, type="found", message="found msg")
+    expected = make_event(
+        event_id=event_id,
+        order_id="ord-1",
+        user_id="user-1",
+        event_type="order_paid",
+    )
     result_mock = MagicMock()
     result_mock.scalars.return_value.first.return_value = expected
     mocked_session.execute = AsyncMock(return_value=result_mock)
@@ -45,7 +58,7 @@ async def test_get_event_returns_none(
     result_mock.scalars.return_value.first.return_value = None
     mocked_session.execute = AsyncMock(return_value=result_mock)
 
-    result = await event_service.get_event("any-id")
+    result = await event_service.get_event(str(uuid4()))
 
     assert result is None
     mocked_session.execute.assert_called_once()
@@ -55,8 +68,8 @@ async def test_get_all_events(
     event_service: EventService, mocked_session: AsyncSession
 ):
     events = [
-        make_event(type="a", message="msg a"),
-        make_event(type="b", message="msg b"),
+        make_event(order_id="ord-a", user_id="u1", event_type="order_created"),
+        make_event(order_id="ord-b", user_id="u2", event_type="order_paid"),
     ]
     result_mock = MagicMock()
     result_mock.scalars.return_value.all.return_value = events

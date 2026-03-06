@@ -10,6 +10,7 @@ from alembic import context
 from producer.core.config import config as app_config
 from producer.db.schema.base import Base
 from producer.db.schema.events import Event
+from producer.db.schema.notifications import Notification
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
