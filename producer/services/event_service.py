@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from producer.db.schema.events import Event as EventORM
+from shared.db.schema.events import Event as EventORM
 from producer.domain.events import Event
 
 

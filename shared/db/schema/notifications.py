@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
-from .base import Base, uuid_pk, created_at
+from shared.db.schema.base import Base, uuid_pk, created_at
 
 
 class Notification(Base):

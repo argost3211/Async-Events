@@ -25,7 +25,10 @@
 
 ## 1.2. Схема БД (одна для Producer и Consumer)
 
-- [ ] **Таблица событий заказов (event)**  
+- [ ] **Общая схема и миграции** размещаются в **`shared/db/`**:
+  - `shared/db/schema/` — модели SQLAlchemy (Base, Event, Notification), используются и Producer, и Consumer.
+  - `shared/db/migrations/` — Alembic (env.py, script.py.mako, versions/); одна история миграций для обоих сервисов.
+- [ ] **Таблица событий заказов (events)**  
   Используется Producer. Поля:
   - `id` (UUID, PK),
   - `order_id` (строка/UUID),
@@ -38,7 +41,7 @@
   Используется Consumer. Поля:
   - `id` (UUID, PK),
   - `user_id`, `order_id`, `event_type`, `message`, `created_at`.
-- [ ] Все миграции — Alembic в общем каталоге миграций (например, `producer/db/migrations`), чтобы одна схема применялась для обоих сервисов.
+- [ ] Producer и Consumer подключаются к БД через свой движок/сессии (например, `producer/db/engine.py`), но **импортируют модели из `shared.db.schema`**. Запуск миграций — из корня проекта: `alembic upgrade head` (Alembic читает URL из env: POSTGRES_*).
 
 ## 1.3. Docker: БД и Kafka
 
@@ -59,8 +62,7 @@
   - `order_id`, `user_id`, `event_type`, `event_occurred_at`;
   - `event_type` — Literal/Enum: `order_created`, `order_paid`, `order_shipped`, `order_delivered`, `order_cancelled`.
 - [ ] Заменить/расширить модели в `producer/models/`: входная модель для `POST /api/v1/events` и модель ответа (например, 201 с `id` сохранённой записи).
-- [ ] Обновить **схему БД**: модель/таблица `events` под события заказов с полями из п. 1.2, включая `published_to_kafka`.
-- [ ] Написать миграцию Alembic: создание/изменение таблицы `events` под новый формат.
+- [ ] Схема БД (модель `Event`) находится в **`shared/db/schema/events.py`**; миграции — в **`shared/db/migrations/`** (см. п. 1.2).
 
 ## 2.2. Бизнес-логика приёма события
 
@@ -101,7 +103,7 @@
 
 ## 2.7. Docker и масштабирование
 
-- [ ] Добавить сервис `producer` в `docker-compose.yml`: зависимость от `db` и `broker`; при старте — retry подключения к БД и Kafka, выполнение миграций (или отдельный шаг/init).
+- [ ] Добавить сервис `producer` в `docker-compose.yml`: зависимость от `db` и `broker`; при старте — retry подключения к БД и Kafka, выполнение миграций из **`shared/db/migrations`** (например, `alembic upgrade head` в рабочей директории проекта) или отдельный шаг/init.
 - [ ] Producer — **одна реплика** (один инстанс), чтобы фоновый job не дублировался.
 
 ---
@@ -113,7 +115,7 @@
 ## 3.1. Каркас приложения
 
 - [ ] Структура проекта: точка входа, конфиг (Postgres, Kafka, топики, параметры retry/DLQ), логирование.
-- [ ] Подключение к Postgres (async, тот же connection string, что и у Producer).
+- [ ] Подключение к Postgres (async, тот же connection string, что и у Producer). Модели БД — из **`shared.db.schema`** (таблица `notifications` и при необходимости `events`).
 - [ ] Подключение к Kafka: consumer group, подписка на топик `order-events`.
 
 ## 3.2. Обработка сообщений

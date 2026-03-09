@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
 from testcontainers.postgres import PostgresContainer
 from unittest.mock import AsyncMock, MagicMock
 
-from producer.db.schema.base import Base
+from shared.db.schema.base import Base
 from producer.services.event_service import EventService
 
 

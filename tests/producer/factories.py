@@ -35,7 +35,7 @@ def make_orm_event(
     published_to_kafka: bool = False,
 ):
     """Создаёт ORM Event для тестов уровня репозитория."""
-    from producer.db.schema.events import Event as EventORM
+    from shared.db.schema.events import Event as EventORM
 
     e = EventORM(
         order_id=order_id,

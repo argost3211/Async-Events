@@ -2,7 +2,7 @@ import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, DateTime
 
-from .base import Base, uuid_pk, created_at
+from shared.db.schema.base import Base, uuid_pk, created_at
 
 
 class Event(Base):

@@ -45,4 +45,4 @@ asyncio_default_test_loop_scope = "session"
 markers = ["integration: marks tests as integration"]
 
 [tool.black]
-extend-exclude = "\\.venv|producer/db/migrations/"
+extend-exclude = "\\.venv|shared/db/migrations/"
