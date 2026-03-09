@@ -1,5 +1,4 @@
 services:
-  # Postgres — без зависимостей, поднимается первым
   db:
     image: postgres
     restart: always
@@ -10,7 +9,7 @@ services:
     ports:
       - "5432:5432"
 
-  # Kafka — без зависимостей, поднимается вместе с db
+
   broker:
     image: apache/kafka:latest
     container_name: broker
@@ -27,3 +26,24 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
+
+  producer:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+      POSTGRES_HOST: db
+    ports:
+      - "8000:8000"
+    command: uvicorn producer.main:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 3

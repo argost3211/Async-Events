@@ -1,10 +1,19 @@
 from typing import AsyncGenerator, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from producer.core.metrics import (
+    ERRORS_DB,
+    ERRORS_KAFKA,
+    EVENTS_DB_WRITTEN,
+    EVENTS_KAFKA_PUBLISHED,
+    EVENTS_RECEIVED,
+    POST_REQUEST_DURATION,
+)
 from producer.models.events import EventCreate, EventRead
 from producer.services.event_service import EventService
+from producer.use_cases import CreateOrderEventUseCase
 from producer.db.engine import AsyncSessionLocal
 
 router = APIRouter(prefix="/api/v1")
@@ -24,25 +33,39 @@ def get_event_service(
     return EventService(session=session)
 
 
+def get_create_event_use_case(
+    request: Request,
+    event_service: EventService = Depends(get_event_service),
+) -> CreateOrderEventUseCase:
+    kafka_client = getattr(request.app.state, "kafka_client", None)
+    return CreateOrderEventUseCase(event_service, kafka_client)
+
+
 @router.post("/events", response_model=EventRead, status_code=201)
 async def create_event(
-    event: EventCreate, service: EventService = Depends(get_event_service)
+    event: EventCreate,
+    use_case: CreateOrderEventUseCase = Depends(get_create_event_use_case),
 ) -> EventRead:
-    event_model = await service.create_event(
-        order_id=event.order_id,
-        user_id=event.user_id,
-        event_type=event.event_type,
-        event_occurred_at=event.event_occurred_at,
-    )
-    return EventRead(
-        id=str(event_model.id),
-        order_id=event_model.order_id,
-        user_id=event_model.user_id,
-        event_type=event_model.event_type,
-        created_at=event_model.created_at,
-        event_occurred_at=event_model.event_occurred_at,
-        published_to_kafka=event_model.published_to_kafka,
-    )
+    EVENTS_RECEIVED.inc()
+    with POST_REQUEST_DURATION.time():
+        try:
+            result = await use_case.execute(
+                order_id=event.order_id,
+                user_id=event.user_id,
+                event_type=event.event_type,
+                event_occurred_at=event.event_occurred_at,
+            )
+        except Exception:
+            ERRORS_DB.inc()
+            raise
+
+    EVENTS_DB_WRITTEN.inc()
+    if result.published:
+        EVENTS_KAFKA_PUBLISHED.inc()
+    elif result.kafka_error:
+        ERRORS_KAFKA.inc()
+
+    return EventRead.from_domain(result.event)
 
 
 @router.get("/events", response_model=List[EventRead])
@@ -50,36 +73,17 @@ async def get_events(
     service: EventService = Depends(get_event_service),
 ) -> List[EventRead]:
     events = await service.get_all_events()
-    return [
-        EventRead(
-            id=str(em.id),
-            order_id=em.order_id,
-            user_id=em.user_id,
-            event_type=em.event_type,
-            created_at=em.created_at,
-            event_occurred_at=em.event_occurred_at,
-            published_to_kafka=em.published_to_kafka,
-        )
-        for em in events
-    ]
+    return [EventRead.from_domain(e) for e in events]
 
 
 @router.get("/events/{event_id}", response_model=EventRead)
 async def get_event(
     event_id: str, service: EventService = Depends(get_event_service)
 ) -> EventRead:
-    event_model = await service.get_event(event_id)
-    if event_model is None:
+    event = await service.get_event(event_id)
+    if event is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found",
         )
-    return EventRead(
-        id=str(event_model.id),
-        order_id=event_model.order_id,
-        user_id=event_model.user_id,
-        event_type=event_model.event_type,
-        created_at=event_model.created_at,
-        event_occurred_at=event_model.event_occurred_at,
-        published_to_kafka=event_model.published_to_kafka,
-    )
+    return EventRead.from_domain(event)

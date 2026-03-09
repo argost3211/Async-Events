@@ -86,3 +86,19 @@ async def test_get_event_by_id_returns_404_when_not_found(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Event not found"
+
+
+@pytest.mark.integration
+async def test_health_returns_200(client):
+    response = await client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.integration
+async def test_metrics_returns_prometheus_text(client):
+    response = await client.get("/metrics")
+    assert response.status_code == 200
+    assert "text/plain" in response.headers.get("content-type", "")
+    body = response.text
+    assert "producer_events_received_total" in body or "producer_" in body

@@ -220,3 +220,6 @@ pgdata/
 
 # Vscode
 .vscode/
+
+# Cursor
+.cursor/

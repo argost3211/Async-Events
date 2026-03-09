@@ -1,8 +1,12 @@
+from __future__ import annotations
+
+from typing import Literal, TYPE_CHECKING
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field, field_validator
 
-from typing import Literal
+if TYPE_CHECKING:
+    from producer.domain.events import Event as DomainEvent
 
 OrderEventType = Literal[
     "order_created",
@@ -40,3 +44,28 @@ class EventRead(BaseModel):
     created_at: datetime
     event_occurred_at: datetime
     published_to_kafka: bool
+
+    @classmethod
+    def from_domain(cls, event: DomainEvent) -> EventRead:
+        return cls(
+            id=str(event.id),
+            order_id=event.order_id,
+            user_id=event.user_id,
+            event_type=event.event_type,
+            created_at=event.created_at,
+            event_occurred_at=event.event_occurred_at,
+            published_to_kafka=event.published_to_kafka,
+        )
+
+
+class EventKafkaPayload(BaseModel):
+    event_id: str
+    order_id: str
+    user_id: str
+    event_type: str
+    event_occurred_at: datetime
+
+    @field_validator("event_occurred_at", mode="after")
+    @classmethod
+    def event_occurred_at_utc(cls, v: datetime) -> datetime:
+        return _to_utc(v)
