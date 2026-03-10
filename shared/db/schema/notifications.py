@@ -1,11 +1,16 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String
+from sqlalchemy import String, UniqueConstraint
 
 from shared.db.schema.base import Base, uuid_pk, created_at
 
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint(
+            "order_id", "event_type", name="uq_notifications_order_id_event_type"
+        ),
+    )
 
     id: Mapped[uuid_pk]
     user_id: Mapped[str] = mapped_column(String(length=64), nullable=False)

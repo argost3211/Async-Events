@@ -15,12 +15,14 @@ from shared.db.schema.notifications import Notification
 
 
 def _pg_url() -> str:
-    """URL Postgres из env (те же переменные, что у producer и consumer)."""
-    user = os.environ.get("POSTGRES_USER", "postgres")
-    password = os.environ.get("POSTGRES_PASSWORD", "postgres")
-    host = os.environ.get("POSTGRES_HOST", "localhost")
-    port = os.environ.get("POSTGRES_PORT", "5432")
-    db = os.environ.get("POSTGRES_DB", "events")
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    user = os.environ.get("POSTGRES_USER")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    host = os.environ.get("POSTGRES_HOST")
+    port = os.environ.get("POSTGRES_PORT")
+    db = os.environ.get("POSTGRES_DB")
     return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
 
 

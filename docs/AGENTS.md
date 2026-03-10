@@ -6,12 +6,24 @@
 - python -m black .
 - pytest -v
 - poetry add <package>
+- alembic revision --autogenerate -m <message>
+- flake8 .
 
-## Defenition of Done
+## Definition of Done
+- покрытие тестами выше 85 процентов
 - все тесты пройдены
-- новый код покрыт тестами
 - линтер black не имеет замечаний
+- flake8 не имеет замечаний
 
 ## Canonical Documentation
 - ARCHITECTURE.md
 - logic.md
+- REFERENCE_EXAMPLES.md
+
+## MUST NOT (запрещено)
+- создавать миграции без учета примеров миграций из @REFERENCE_EXAMPLES.md
+- давать переменным имена без учета примеров из @REFERENCE_EXAMPLES.md
+
+
+## MUST (обязательно)
+- сначала нужно писать тесты, а потом реализацию (TDD)

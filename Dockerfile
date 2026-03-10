@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir poetry \
     && poetry config virtualenvs.create false \
     && poetry install --no-interaction
 
+COPY shared ./shared
 COPY producer ./producer
+COPY consumer ./consumer
 COPY alembic.ini ./
 
 ENV PYTHONPATH=/app
