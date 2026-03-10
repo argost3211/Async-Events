@@ -21,6 +21,7 @@ class Config(BaseSettings):
         default=30, alias="GENERATOR_HEALTH_RETRY_ATTEMPTS"
     )
     cancel_probability: float = Field(default=0.1, alias="GENERATOR_CANCEL_PROBABILITY")
+    metrics_port: int = Field(default=8002, alias="GENERATOR_METRICS_PORT")
 
 
 config = Config()

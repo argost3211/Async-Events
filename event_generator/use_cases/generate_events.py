@@ -5,6 +5,7 @@ import random
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from event_generator.core.metrics import EVENTS_SENT
 from event_generator.domain.order_chain import OrderChain
 
 if TYPE_CHECKING:
@@ -54,12 +55,14 @@ class GenerateEventsUseCase:
 
             if random.random() < self._duplicate_probability and idx in last_sent:
                 event_type, occurred = last_sent[idx]
-                await self._event_sender.send_event(
+                ok = await self._event_sender.send_event(
                     order_id=chain.order_id,
                     user_id=chain.user_id,
                     event_type=event_type,
                     event_occurred_at=occurred,
                 )
+                if ok:
+                    EVENTS_SENT.inc()
                 sent_count += 1
             else:
                 occurred = datetime.now(timezone.utc)
@@ -70,12 +73,14 @@ class GenerateEventsUseCase:
                 ):
                     chain.cancel()
                     event_type = "order_cancelled"
-                await self._event_sender.send_event(
+                ok = await self._event_sender.send_event(
                     order_id=chain.order_id,
                     user_id=chain.user_id,
                     event_type=event_type,
                     event_occurred_at=occurred,
                 )
+                if ok:
+                    EVENTS_SENT.inc()
                 sent_count += 1
                 last_sent[idx] = (event_type, occurred)
                 if event_type == "order_cancelled":

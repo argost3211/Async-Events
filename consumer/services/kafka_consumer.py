@@ -135,7 +135,6 @@ class KafkaConsumerClient:
                 except Exception as e:
                     last_error = e
                     if attempt < config.consumer_max_retries:
-                        consumer_metrics.RETRIES.inc()
                         delay = min(
                             config.consumer_retry_base_delay * (2 ** (attempt - 1)),
                             config.consumer_retry_max_delay,
@@ -149,7 +148,6 @@ class KafkaConsumerClient:
                         )
                         await asyncio.sleep(delay)
             if last_error is not None:
-                consumer_metrics.DLQ_MESSAGES.inc()
                 error_info = DLQErrorInfo(
                     error_reason=str(last_error),
                     attempt_count=config.consumer_max_retries,

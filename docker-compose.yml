@@ -73,6 +73,8 @@ services:
       - .env
     environment:
       GENERATOR_PRODUCER_BASE_URL: http://producer:8000
+    ports:
+      - "8002:8002"
     command: python -m event_generator.main
 
   prometheus:
@@ -81,6 +83,7 @@ services:
     depends_on:
       - producer
       - consumer
+      - event-generator
     ports:
       - "9090:9090"
     volumes:

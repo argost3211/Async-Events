@@ -4,12 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from producer.core.metrics import (
-    ERRORS_DB,
-    ERRORS_KAFKA,
     EVENTS_DB_WRITTEN,
     EVENTS_KAFKA_PUBLISHED,
     EVENTS_RECEIVED,
-    POST_REQUEST_DURATION,
 )
 from producer.models.events import EventCreate, EventRead
 from producer.services.event_service import EventService
@@ -47,23 +44,15 @@ async def create_event(
     use_case: CreateOrderEventUseCase = Depends(get_create_event_use_case),
 ) -> EventRead:
     EVENTS_RECEIVED.inc()
-    with POST_REQUEST_DURATION.time():
-        try:
-            result = await use_case.execute(
-                order_id=event.order_id,
-                user_id=event.user_id,
-                event_type=event.event_type,
-                event_occurred_at=event.event_occurred_at,
-            )
-        except Exception:
-            ERRORS_DB.inc()
-            raise
-
+    result = await use_case.execute(
+        order_id=event.order_id,
+        user_id=event.user_id,
+        event_type=event.event_type,
+        event_occurred_at=event.event_occurred_at,
+    )
     EVENTS_DB_WRITTEN.inc()
     if result.published:
         EVENTS_KAFKA_PUBLISHED.inc()
-    elif result.kafka_error:
-        ERRORS_KAFKA.inc()
 
     return EventRead.from_domain(result.event)
 

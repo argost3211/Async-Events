@@ -1,5 +1,4 @@
 import asyncio
-import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -19,30 +18,21 @@ setup_logging()
 
 
 async def _message_handler(msg: EventMessage) -> None:
-    start = time.monotonic()
-    try:
-        async with AsyncSessionLocal() as session:
-            notification_service = NotificationService(session)
-            use_case = ProcessOrderEventUseCase(
-                notification_repo=notification_service,
-                message_renderer=render_message,
-            )
-            result = await use_case.execute(
-                event_id=msg.event_id,
-                order_id=msg.order_id,
-                user_id=msg.user_id,
-                event_type=msg.event_type,
-                event_occurred_at=msg.event_occurred_at,
-            )
-            if result.skipped:
-                consumer_metrics.MESSAGES_SKIPPED.inc()
-            else:
-                consumer_metrics.NOTIFICATIONS_CREATED.inc()
-    except Exception:
-        consumer_metrics.ERRORS_DB.inc()
-        raise
-    finally:
-        consumer_metrics.MESSAGE_PROCESSING_DURATION.observe(time.monotonic() - start)
+    async with AsyncSessionLocal() as session:
+        notification_service = NotificationService(session)
+        use_case = ProcessOrderEventUseCase(
+            notification_repo=notification_service,
+            message_renderer=render_message,
+        )
+        result = await use_case.execute(
+            event_id=msg.event_id,
+            order_id=msg.order_id,
+            user_id=msg.user_id,
+            event_type=msg.event_type,
+            event_occurred_at=msg.event_occurred_at,
+        )
+        if not result.skipped:
+            consumer_metrics.NOTIFICATIONS_CREATED.inc()
 
 
 @asynccontextmanager

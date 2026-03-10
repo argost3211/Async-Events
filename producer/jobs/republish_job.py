@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from producer.core.config import config
-from producer.core.metrics import REPUBLISH_ERRORS, REPUBLISH_PUBLISHED
+from producer.core.metrics import EVENTS_KAFKA_PUBLISHED
 from producer.db.engine import AsyncSessionLocal
 from producer.services.event_service import EventService
 from producer.use_cases.republish_unpublished_events import (
@@ -33,9 +33,7 @@ async def run_republish_loop(kafka_client) -> None:
                     created_after=created_after, limit=limit
                 )
                 if result.published_count:
-                    REPUBLISH_PUBLISHED.inc(result.published_count)
-                if result.error_count:
-                    REPUBLISH_ERRORS.inc(result.error_count)
+                    EVENTS_KAFKA_PUBLISHED.inc(result.published_count)
         except asyncio.CancelledError:
             logger.info("Republish job cancelled")
             break
