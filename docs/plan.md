@@ -163,13 +163,13 @@
 
 ## 5.1. Prometheus
 
-- [ ] Добавить сервис Prometheus в docker-compose.
-- [ ] Конфигурация scrape: периодический сбор с `http://producer:8000/metrics` и `http://consumer:<port>/metrics` (порты согласовать с docker-compose).
+- [x] Добавить сервис Prometheus в docker-compose.
+- [x] Конфигурация scrape: периодический сбор с `http://producer:8000/metrics` и `http://consumer:<port>/metrics` (порты согласовать с docker-compose).
 
 ## 5.2. Grafana
 
-- [ ] Добавить сервис Grafana в docker-compose; при необходимости настроить источник данных Prometheus.
-- [ ] Дашборды: throughput (события/сообщения в единицу времени), число уведомлений, consumer lag, latency обработки (p50, p95, p99), retry, DLQ, ошибки по компонентам (согласно logic.md, раздел 6).
+- [x] Добавить сервис Grafana в docker-compose; при необходимости настроить источник данных Prometheus.
+- [x] Дашборды: throughput (события/сообщения в единицу времени), число уведомлений, consumer lag, latency обработки (p50, p95, p99), retry, DLQ, ошибки по компонентам (согласно logic.md, раздел 6).
 
 ---
 
@@ -178,7 +178,7 @@
 - [ ] **db** — без зависимостей; первый.
 - [ ] **broker** — без зависимостей; стартует вместе с db.
 - [ ] **producer** — `depends_on: [db, broker]`; healthcheck по `GET /health`; одна реплика; при старте retry к БД и Kafka, создание топиков, миграции.
-- [ ] **consumer** — `depends_on: [db, broker]`; при старте retry к БД и Kafka; можно несколько реплик.
+- [ ] **consumer** — `depends_on: [db, broker]`; при старте retry к БД и Kafka; нужно несколько реплик.
 - [ ] **event-generator** — `depends_on: [producer]` с условием `service_healthy`; при старте опрос health Producer.
 - [ ] **Prometheus** — `depends_on` на producer и consumer (по необходимости).
 - [ ] **Grafana** — `depends_on: Prometheus`.
