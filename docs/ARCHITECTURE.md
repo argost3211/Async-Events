@@ -1,4 +1,4 @@
-# Архитектура Producer
+# Архитектура сервисов
 
 Проект следует принципам **Clean Architecture** (Robert C. Martin).
 Этот документ — обязательный справочник при генерации и ревью кода.
@@ -8,7 +8,7 @@
 ## 1. Слои и их ответственность
 
 ```
-producer/
+any-service/
 ├── domain/          # Entities — доменные сущности
 ├── use_cases/       # Use Cases — бизнес-логика приложения
 ├── services/        # Interface Adapters — реализации портов (репозитории, Kafka-клиент)
@@ -78,7 +78,7 @@ Frameworks & Drivers  →  Interface Adapters  →  Use Cases  →  Domain
 
 | Concern | Где обрабатывается | Где запрещён |
 |---------|--------------------|-------------|
-| **Метрики** (Prometheus) | `api/`, `jobs/republish_job.py`, `core/metrics.py` | `use_cases/`, `domain/` |
+| **Метрики** (Prometheus) | `api/`, `jobs/`, `services/`, `core/metrics.py` | `use_cases/`, `domain/`, `main.py` |
 | **Логирование** | Допускается в `use_cases/` (stdlib `logging`) | `domain/` |
 | **Конфигурация** | `core/config.py` → используется в адаптерах и Composition Root | `use_cases/`, `domain/`, `services/` |
 

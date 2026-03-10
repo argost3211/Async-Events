@@ -14,13 +14,21 @@ class Config(BaseSettings):
     duplicate_probability: float = Field(
         default=0.1, alias="GENERATOR_DUPLICATE_PROBABILITY"
     )
-    min_delay_ms: int = Field(default=100, alias="GENERATOR_MIN_DELAY_MS")
-    max_delay_ms: int = Field(default=1000, alias="GENERATOR_MAX_DELAY_MS")
     health_retry_seconds: int = Field(default=2, alias="GENERATOR_HEALTH_RETRY_SECONDS")
     health_retry_attempts: int = Field(
         default=30, alias="GENERATOR_HEALTH_RETRY_ATTEMPTS"
     )
     cancel_probability: float = Field(default=0.1, alias="GENERATOR_CANCEL_PROBABILITY")
+    sender_max_concurrent: int = Field(
+        default=1000, alias="GENERATOR_SENDER_MAX_CONCURRENT"
+    )
+    sender_timeout_seconds: float = Field(
+        default=5.0, alias="GENERATOR_SENDER_TIMEOUT_SECONDS"
+    )
+    sender_max_retries: int = Field(default=3, alias="GENERATOR_SENDER_MAX_RETRIES")
+    sender_backoff_factor: float = Field(
+        default=2.0, alias="GENERATOR_SENDER_BACKOFF_FACTOR"
+    )
     metrics_port: int = Field(default=8002, alias="GENERATOR_METRICS_PORT")
 
 

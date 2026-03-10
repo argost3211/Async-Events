@@ -3,7 +3,7 @@ from datetime import datetime
 
 import httpx
 
-from event_generator.core.metrics import PRODUCER_RESPONSE_DURATION
+from event_generator.core.metrics import EVENTS_SENT, PRODUCER_RESPONSE_DURATION
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ class ProducerClient:
             with PRODUCER_RESPONSE_DURATION.time():
                 response = await client.post(url, json=payload)
             if response.status_code == 201:
+                EVENTS_SENT.inc()
                 return True
             logger.warning(
                 "Producer API returned %s for order_id=%s event_type=%s",
