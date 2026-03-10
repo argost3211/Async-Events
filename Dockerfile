@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir poetry \
 COPY shared ./shared
 COPY producer ./producer
 COPY consumer ./consumer
+COPY event_generator ./event_generator
 COPY alembic.ini ./
 
 ENV PYTHONPATH=/app

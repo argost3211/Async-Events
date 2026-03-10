@@ -62,3 +62,15 @@ services:
     ports:
       - "8001:8001"
     command: python -m consumer.main
+
+  event-generator:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      producer:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      GENERATOR_PRODUCER_BASE_URL: http://producer:8000
+    command: python -m event_generator.main
