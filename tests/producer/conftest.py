@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator, cast
 
 import httpx
@@ -89,7 +90,7 @@ async def db_session(test_engine, _init_test_db) -> AsyncGenerator[AsyncSession,
 
 @pytest.fixture
 async def client(db_session) -> AsyncGenerator[httpx.AsyncClient, None]:
-    """HTTP-клиент с подменой get_session на тестовую сессию."""
+    """HTTP-клиент с подменой get_session и get_session_factory на тестовую сессию."""
     from producer.main import app
     from producer.api.v1 import events
 
@@ -99,7 +100,15 @@ async def client(db_session) -> AsyncGenerator[httpx.AsyncClient, None]:
         finally:
             await db_session.rollback()
 
+    @asynccontextmanager
+    async def test_session_cm():
+        yield db_session
+
+    def override_get_session_factory():
+        return test_session_cm
+
     app.dependency_overrides[events.get_session] = override_get_session
+    app.dependency_overrides[events.get_session_factory] = override_get_session_factory
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",

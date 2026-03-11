@@ -20,6 +20,10 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+def get_session_factory():
+    return AsyncSessionLocal
+
+
 def get_event_service(
     session: AsyncSession = Depends(get_session),
 ) -> EventService:
@@ -31,15 +35,17 @@ async def create_event(
     event: EventCreate,
     request: Request,
     background_tasks: BackgroundTasks,
-    service: EventService = Depends(get_event_service),
+    session_factory=Depends(get_session_factory),
 ) -> EventRead:
     EVENTS_RECEIVED.inc()
-    domain_event = await service.create_event(
-        order_id=event.order_id,
-        user_id=event.user_id,
-        event_type=event.event_type,
-        event_occurred_at=event.event_occurred_at,
-    )
+    async with session_factory() as session:
+        service = EventService(session=session)
+        domain_event = await service.create_event(
+            order_id=event.order_id,
+            user_id=event.user_id,
+            event_type=event.event_type,
+            event_occurred_at=event.event_occurred_at,
+        )
     EVENTS_DB_WRITTEN.inc()
     kafka_client = getattr(request.app.state, "kafka_client", None)
     if kafka_client is not None:

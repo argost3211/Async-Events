@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.db.schema.events import Event as EventORM
@@ -31,17 +31,22 @@ class EventService:
         event_type: str,
         event_occurred_at: datetime,
     ) -> Event:
-        orm_event = EventORM(
-            order_id=order_id,
-            user_id=user_id,
-            event_type=event_type,
-            event_occurred_at=event_occurred_at,
-            published_to_kafka=False,
+        stmt = (
+            insert(EventORM)
+            .values(
+                order_id=order_id,
+                user_id=user_id,
+                event_type=event_type,
+                event_occurred_at=event_occurred_at,
+                published_to_kafka=False,
+                id=uuid.uuid4(),
+            )
+            .returning(EventORM)
         )
         async with self._db.begin():
-            self._db.add(orm_event)
-            await self._db.flush()
-        return self._to_domain(orm_event)
+            result = await self._db.execute(stmt)
+        row = result.scalars().one()
+        return self._to_domain(row)
 
     async def get_event(self, event_id: str) -> Event | None:
         try:
