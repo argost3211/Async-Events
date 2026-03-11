@@ -40,7 +40,7 @@ class EventService:
         )
         async with self._db.begin():
             self._db.add(orm_event)
-        await self._db.refresh(orm_event)
+            await self._db.flush()
         return self._to_domain(orm_event)
 
     async def get_event(self, event_id: str) -> Event | None:

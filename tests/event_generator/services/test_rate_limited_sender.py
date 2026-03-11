@@ -141,3 +141,44 @@ async def test_concurrency_limited_by_semaphore(inner_sender):
     results = await __import__("asyncio").gather(*tasks)
     assert all(results)
     assert max_seen <= 2
+
+
+async def test_semaphore_acquire_timeout(inner_sender):
+    """When all semaphore slots are held by slow tasks, new task returns False on acquire timeout."""
+    asyncio = __import__("asyncio")
+
+    async def slow_send(*args, **kwargs):
+        await asyncio.sleep(2.0)
+        return True
+
+    inner_sender.send_event = AsyncMock(side_effect=slow_send)
+    sender = RateLimitedSender(
+        sender=inner_sender,
+        sender_max_concurrent=1,
+        timeout_seconds=5.0,
+        max_retries=1,
+        backoff_factor=0.01,
+        semaphore_acquire_timeout_seconds=0.1,
+    )
+    occurred = datetime.now(timezone.utc)
+
+    hold_task = asyncio.create_task(
+        sender.send_event(
+            order_id="ord-hold",
+            user_id="user-1",
+            event_type="order_created",
+            event_occurred_at=occurred,
+        )
+    )
+    await asyncio.sleep(0.02)
+
+    result = await sender.send_event(
+        order_id="ord-wait",
+        user_id="user-2",
+        event_type="order_created",
+        event_occurred_at=occurred,
+    )
+    assert result is False
+    assert inner_sender.send_event.await_count == 1
+
+    await hold_task

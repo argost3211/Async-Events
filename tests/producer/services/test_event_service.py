@@ -13,7 +13,7 @@ async def test_create_event(event_service: EventService, mocked_session: AsyncSe
     cm.__aenter__ = AsyncMock(return_value=None)
     cm.__aexit__ = AsyncMock(return_value=None)
     mocked_session.begin = MagicMock(return_value=cm)
-    mocked_session.refresh = AsyncMock()
+    mocked_session.flush = AsyncMock()
 
     event = await event_service.create_event(
         order_id="ord-1",
@@ -27,7 +27,7 @@ async def test_create_event(event_service: EventService, mocked_session: AsyncSe
     assert event.event_type == "order_created"
     assert event.published_to_kafka is False
     mocked_session.add.assert_called_once()
-    mocked_session.refresh.assert_called_once()
+    mocked_session.flush.assert_called_once()
 
 
 async def test_get_event_returns_event(

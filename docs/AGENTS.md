@@ -14,6 +14,10 @@
 - alembic revision --autogenerate -m <message>
 - flake8 .
 - python -m vulture .
+- docker-compose up -d ...
+- docker-compose down
+- docker ps
+- docker-compose logs
 
 ## Definition of Done
 - покрытие тестами выше 85 процентов
@@ -21,6 +25,7 @@
 - линтер black не имеет замечаний
 - flake8 не имеет замечаний
 - vulture не сообщает о мёртвом коде
+- docker контейнеры поднялись и работают без ошибок
 
 ## Canonical Documentation
 - ARCHITECTURE.md
@@ -47,4 +52,5 @@
 - реализовывать use case только как координатор вызовов; сложная логика и алгоритмы — в domain или в сервисах
 - реализовывать сигнатуру методов строго в соответсвии с бизнес-требованиями, canonocal documentation или при согласовании с пользователем
 - doc-string в классах и методах должны описывать только реализованный функционал 
+- использовать `;` вместе `&&` в терминале для выполнения нескольких команд
 

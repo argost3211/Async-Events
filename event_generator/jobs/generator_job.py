@@ -13,7 +13,7 @@ from event_generator.use_cases.generate_events import GenerateEventsUseCase
 
 async def run_generator() -> None:
     EVENTS_PER_SECOND_TARGET.set(config.events_per_second)
-    async with httpx.AsyncClient() as http_client:
+    async with httpx.AsyncClient(timeout=config.sender_timeout_seconds) as http_client:
         producer_client = ProducerClient(
             base_url=config.producer_base_url,
             http_client=http_client,

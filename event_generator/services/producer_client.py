@@ -50,6 +50,12 @@ class ProducerClient:
                 event_type,
             )
             return False
+        except (
+            httpx.ReadTimeout,
+            httpx.WriteTimeout,
+            httpx.ConnectTimeout,
+        ) as e:
+            raise TimeoutError from e
         except Exception as e:
             logger.exception(
                 "Failed to send event order_id=%s event_type=%s: %s",

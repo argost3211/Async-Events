@@ -24,10 +24,16 @@ class RateLimitedSender:
         timeout_seconds: float,
         max_retries: int,
         backoff_factor: float,
+        semaphore_acquire_timeout_seconds: float | None = None,
     ) -> None:
         self._sender = sender
         self._semaphore = asyncio.Semaphore(max(1, sender_max_concurrent))
         self._timeout_seconds = timeout_seconds
+        self._semaphore_acquire_timeout = (
+            semaphore_acquire_timeout_seconds
+            if semaphore_acquire_timeout_seconds is not None
+            else timeout_seconds
+        )
         self._max_retries = max(1, max_retries)
         self._backoff_factor = backoff_factor
 
@@ -38,13 +44,24 @@ class RateLimitedSender:
         event_type: str,
         event_occurred_at: datetime,
     ) -> bool:
-        async with self._semaphore:
+        try:
+            async with asyncio.timeout(self._semaphore_acquire_timeout):
+                await self._semaphore.acquire()
+        except TimeoutError:
+            logger.warning(
+                "Semaphore acquire timed out for order_id=%s",
+                order_id,
+            )
+            return False
+        try:
             return await self._send_with_retry(
                 order_id=order_id,
                 user_id=user_id,
                 event_type=event_type,
                 event_occurred_at=event_occurred_at,
             )
+        finally:
+            self._semaphore.release()
 
     async def _send_with_retry(
         self,
@@ -72,19 +89,16 @@ class RateLimitedSender:
                     return result
             except (TimeoutError, OSError, ConnectionError) as e:
                 last_error = e
-                logger.warning(
-                    "Send attempt %s failed for order_id=%s: %s",
-                    attempt + 1,
-                    order_id,
-                    e,
-                )
                 if attempt < self._max_retries - 1:
                     pause = self._backoff_factor**attempt
                     await asyncio.sleep(pause)
+        err_msg = (
+            f"{type(last_error).__name__}: {last_error}" if last_error else "unknown"
+        )
         logger.error(
             "All %s send attempts failed for order_id=%s: %s",
             self._max_retries,
             order_id,
-            last_error,
+            err_msg,
         )
         return False
