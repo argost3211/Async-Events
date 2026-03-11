@@ -1,17 +1,13 @@
 from typing import AsyncGenerator, List
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from producer.core.metrics import (
-    EVENTS_DB_WRITTEN,
-    EVENTS_KAFKA_PUBLISHED,
-    EVENTS_RECEIVED,
-)
+from producer.core.metrics import EVENTS_DB_WRITTEN, EVENTS_RECEIVED
+from producer.db.engine import AsyncSessionLocal
 from producer.models.events import EventCreate, EventRead
 from producer.services.event_service import EventService
-from producer.use_cases import CreateOrderEventUseCase
-from producer.db.engine import AsyncSessionLocal
+from producer.services.publish_after_response import publish_event_after_response
 
 router = APIRouter(prefix="/api/v1")
 
@@ -30,31 +26,27 @@ def get_event_service(
     return EventService(session=session)
 
 
-def get_create_event_use_case(
-    request: Request,
-    event_service: EventService = Depends(get_event_service),
-) -> CreateOrderEventUseCase:
-    kafka_client = getattr(request.app.state, "kafka_client", None)
-    return CreateOrderEventUseCase(event_service, kafka_client)
-
-
 @router.post("/events", response_model=EventRead, status_code=201)
 async def create_event(
     event: EventCreate,
-    use_case: CreateOrderEventUseCase = Depends(get_create_event_use_case),
+    request: Request,
+    background_tasks: BackgroundTasks,
+    service: EventService = Depends(get_event_service),
 ) -> EventRead:
     EVENTS_RECEIVED.inc()
-    result = await use_case.execute(
+    domain_event = await service.create_event(
         order_id=event.order_id,
         user_id=event.user_id,
         event_type=event.event_type,
         event_occurred_at=event.event_occurred_at,
     )
     EVENTS_DB_WRITTEN.inc()
-    if result.published:
-        EVENTS_KAFKA_PUBLISHED.inc()
-
-    return EventRead.from_domain(result.event)
+    kafka_client = getattr(request.app.state, "kafka_client", None)
+    if kafka_client is not None:
+        background_tasks.add_task(
+            publish_event_after_response, domain_event, kafka_client
+        )
+    return EventRead.from_domain(domain_event)
 
 
 @router.get("/events", response_model=List[EventRead])

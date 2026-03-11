@@ -29,3 +29,70 @@
 
 #### Хорошее название
 - kafka_connect_retry_attempts
+
+
+## Комментарии в классах
+
+### Good
+```
+class CreateOrderEventUseCase:
+    """
+    Создание события заказа: только запись в БД.
+    Возвращает CreateEventResult.
+    """
+
+    def __init__(
+        self,
+        event_repo: EventRepository,
+        kafka_publisher: EventPublisher | None = None,
+    ) -> None:
+        self._event_repo = event_repo
+        self._kafka_publisher = kafka_publisher
+
+    async def execute(
+        self,
+        order_id: str,
+        user_id: str,
+        event_type: str,
+        event_occurred_at: datetime,
+    ) -> CreateEventResult:
+        event = await self._event_repo.create_event(
+            order_id=order_id,
+            user_id=user_id,
+            event_type=event_type,
+            event_occurred_at=event_occurred_at,
+        )
+        return CreateEventResult(event=event, published=False)
+```
+
+### Bad
+```
+class CreateOrderEventUseCase:
+    """
+    Создание события заказа: только запись в БД.
+    Возвращает CreateEventResult. Публикация в Kafka выполняется в фоне (API).
+    """
+
+    def __init__(
+        self,
+        event_repo: EventRepository,
+        kafka_publisher: EventPublisher | None = None,
+    ) -> None:
+        self._event_repo = event_repo
+        self._kafka_publisher = kafka_publisher
+
+    async def execute(
+        self,
+        order_id: str,
+        user_id: str,
+        event_type: str,
+        event_occurred_at: datetime,
+    ) -> CreateEventResult:
+        event = await self._event_repo.create_event(
+            order_id=order_id,
+            user_id=user_id,
+            event_type=event_type,
+            event_occurred_at=event_occurred_at,
+        )
+        return CreateEventResult(event=event, published=False)
+```

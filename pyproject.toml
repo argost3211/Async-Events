@@ -25,10 +25,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 package-mode = false
+
 [dependency-groups]
 dev = [
-    "black (>=26.1.0,<27.0.0)",
-    "flake8 (>=7.3.0,<8.0.0)"
+    "flake8 (>=7.3.0,<8.0.0)",
+    "vulture (>=2.11,<3.0.0)",
+    "black (>=26.3.0,<27.0.0)"
 ]
 test = [
     "pytest (>=9.0.2,<10.0.0)",
@@ -48,3 +50,8 @@ markers = ["integration: marks tests as integration"]
 [tool.black]
 target-version = ["py311"]
 extend-exclude = "\\.venv|shared/db/migrations/"
+
+[tool.vulture]
+min_confidence = 80
+exclude = [".venv", "shared/db/migrations"]
+ignore_names = ["args", "kwargs"]
